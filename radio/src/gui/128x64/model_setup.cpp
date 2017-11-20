@@ -1112,7 +1112,7 @@ void menuModelSetup(event_t event)
         }
 #endif
         if (IS_MODULE_R9M(moduleIdx)) {
-          if (IS_TELEMETRY_INTERNAL_MODULE) {
+          if (IS_TELEMETRY_INTERNAL_MODULE()) {
             lcdDrawTextAlignedLeft(y, STR_SPORT_OUT);
             lcdDrawText(MODEL_SETUP_2ND_COLUMN, y, STR_DISABLE_INTERNAL);
           }

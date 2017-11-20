@@ -1004,7 +1004,7 @@ bool menuModelSetup(event_t event)
 #endif
         if (IS_MODULE_R9M(moduleIdx)) {
           lcdDrawText(MENUS_MARGIN_LEFT, y, STR_SPORT_OUT);
-          if (IS_TELEMETRY_INTERNAL_MODULE) {
+          if (IS_TELEMETRY_INTERNAL_MODULE()) {
             lcdDrawText(MODEL_SETUP_2ND_COLUMN, y, STR_DISABLE_INTERNAL);
           }
           else {
