@@ -68,7 +68,6 @@ bool isCurrentSensor(int sensor);
 bool isTelemetryFieldAvailable(int index);
 bool isTelemetryFieldComparisonAvailable(int index);
 bool isSensorAvailable(int sensor);
-const char* getR9MPowerString(int power);
 
 bool modelHasNotes();
 #endif

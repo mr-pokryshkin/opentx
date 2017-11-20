@@ -1124,7 +1124,7 @@ void menuModelSetup(event_t event)
 #endif
       if (IS_MODULE_R9M(moduleIdx)) {
         lcdDrawTextAlignedLeft(y, TR_MULTI_RFPOWER);
-        lcdDrawText(MODEL_SETUP_2ND_COLUMN, y, getR9MPowerString(g_model.moduleData[moduleIdx].pxx.power), attr);
+        lcdDrawTextAtIndex(MODEL_SETUP_2ND_COLUMN, y, STR_R9M_POWER_VALUES, g_model.moduleData[moduleIdx].pxx.power, attr);
         if (attr)
           CHECK_INCDEC_MODELVAR(event, g_model.moduleData[moduleIdx].pxx.power, 0, 3);
       }
