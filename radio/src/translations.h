@@ -609,7 +609,6 @@ extern const pm_char STR_FAS_OFFSET[];
 extern const pm_char STR_MULTI_CUSTOM[];
 extern const pm_char STR_MULTI_OPTION[];
 extern const pm_char STR_MULTI_VIDFREQ[];
-extern const pm_char STR_MULTI_RFPOWER[];
 extern const pm_char STR_MULTI_RFTUNE[];
 extern const pm_char STR_MULTI_TELEMETRY[];
 extern const pm_char STR_MULTI_AUTOBIND[];
