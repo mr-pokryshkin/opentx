@@ -36,6 +36,7 @@ set(FIRMWARE_TARGET_SRC
   ../common/arm/stm32/usbd_desc.c
   ../common/arm/stm32/usbd_usr.cpp
   ../common/arm/stm32/usb_driver.cpp
+  ../common/arm/stm32/flash_driver.cpp
   )
 add_definitions(-DUSB_SERIAL)
 set(FIRMWARE_TARGET_SRC
