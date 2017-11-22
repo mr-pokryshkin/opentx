@@ -124,16 +124,12 @@ set(TARGET_SRC
   ../common/arm/stm32/adc_driver.cpp
   )
 
-set(FIRMWARE_SRC
-  ${FIRMWARE_SRC}
-  loadboot.cpp
-  )
-
 set(FIRMWARE_TARGET_SRC
   ${FIRMWARE_TARGET_SRC}
   ${LCD_DRIVER}
   i2c_driver.cpp
   pwr_driver.cpp
+  ../common/arm/stm32/loadboot.cpp
   )
 
 if(LCD_DUAL_BUFFER)
