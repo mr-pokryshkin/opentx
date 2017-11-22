@@ -434,6 +434,7 @@
 #define PWR_PRESS_BUTTON
 #endif
 #define PWR_GPIO                        GPIOD
+#define PWR_SWITCH_GPIO_REG             PWR_GPIO->IDR
 #define PWR_SWITCH_GPIO_PIN             GPIO_Pin_1  // PD.01
 #define PWR_ON_GPIO_PIN                 GPIO_Pin_0  // PD.00
 #if defined(PCBX7)

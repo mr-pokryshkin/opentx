@@ -47,19 +47,21 @@ const uint8_t BootCode[] = {
 };
 
 #if defined(STM32)
+
+#define enableKeysPeriphClock() {                                       \
+        RCC->AHB1ENR |= KEYS_RCC_AHB1Periph;                            \
+        /* these two NOPs are needed (see STM32F errata sheet) before the peripheral */ \
+        /* register can be written after the peripheral clock was enabled */ \
+        __ASM volatile ("nop");                                         \
+        __ASM volatile ("nop");                                         \
+    }
+
+    
+
 __attribute__ ((section(".bootrodata"), used))
 void _bootStart()
 {
-#if defined(PCBX9E)
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIOGEN | RCC_AHB1ENR_GPIODEN;
-#else
-  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIOEEN | RCC_AHB1ENR_GPIODEN;
-#endif
-
-  // these two NOPs are needed (see STM32F errata sheet) before the peripheral 
-  // register can be written after the peripheral clock was enabled
-  __ASM volatile ("nop");
-  __ASM volatile ("nop");
+    enableKeysPeriphClock();
 
   // Turn soft power ON now, but only if we got started because of the watchdog
   // or software reset. If the radio was started by user pressing the power button
@@ -68,8 +70,10 @@ void _bootStart()
   // If we were to turn it on here indiscriminately, then the radio can go into the 
   // power on/off loop after being powered off by the user. (issue #2790)
   if (WAS_RESET_BY_WATCHDOG_OR_SOFTWARE()) {
-    GPIOD->BSRRL = 1;                                  // set PWR_ON_GPIO_PIN pin to 1
-    GPIOD->MODER = (GPIOD->MODER & 0xFFFFFFFC) | 1;    // General purpose output mode
+
+    // rco: is there way to replace that through some HAL code???
+    PWR_GPIO->BSRRL = PWR_ON_GPIO_PIN;               // set PWR_ON_GPIO_PIN pin to 1
+    PWR_GPIO->MODER = (PWR_GPIO->MODER & 0xFFFFFFFC) | 1;  // General purpose output mode
   }
 
   // TRIMS_GPIO_PIN_LHR is on PG0 on X9E and on PE3 on Taranis
@@ -94,12 +98,14 @@ void _bootStart()
   // eventually exhaust and the radio will turn off.
   if (!WAS_RESET_BY_WATCHDOG_OR_SOFTWARE()) {
     // wait here until the power key is pressed
-    while (GPIOD->IDR & PWR_SWITCH_GPIO_PIN) {
+    while (PWR_SWITCH_GPIO_REG & PWR_SWITCH_GPIO_PIN) {
       wdt_reset();
     }
   }
 
-  if (!(TRIMS_GPIO_REG_LHR & TRIMS_GPIO_PIN_LHR) && !(TRIMS_GPIO_REG_RHL & TRIMS_GPIO_PIN_RHL)) {
+  if (!(TRIMS_GPIO_REG_LHR & TRIMS_GPIO_PIN_LHR)
+      && !(TRIMS_GPIO_REG_RHL & TRIMS_GPIO_PIN_RHL)) {
+
     // Bootloader needed
     const uint8_t *src;
     uint8_t *dest;
@@ -108,7 +114,7 @@ void _bootStart()
     wdt_reset();
     size = sizeof(BootCode);
     src = BootCode;
-    dest = (uint8_t *) 0x20000000;
+    dest = (uint8_t *) SRAM_BASE;
 
     for (; size; size -= 1) {
       *dest++ = *src++;
@@ -117,21 +123,17 @@ void _bootStart()
     // Go execute bootloader
     wdt_reset();
 
-    uint32_t address = *(uint32_t *) 0x20000004;
+    uint32_t address = *(uint32_t *) (SRAM_BASE + 4);
 
     ((void (*)(void)) (address))();		// Go execute the loaded application
   }
 
-// run_application() ;
-  asm(" mov.w	r1, #134217728");
-  // 0x8000000
-  asm(" add.w	r1, #32768");
-  // 0x8000
+  // Start the main application
+  asm(" mov.w	r1, #0x8000000");
+  asm(" add.w	r1, #0x8000");
 
-  asm(" movw	r0, #60680");
-  // 0xED08
-  asm(" movt	r0, #57344");
-  // 0xE000
+  asm(" movw	r0, #0xED08");
+  asm(" movt	r0, #0xE000");
   asm(" str	r1, [r0, #0]");
   // Set the VTOR
 
