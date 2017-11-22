@@ -387,7 +387,7 @@ void setupPulsesPXX(uint8_t port)
 #endif
   if (IS_MODULE_R9M(port)) {
     extra_flags |= (g_model.moduleData[port].pxx.power << 3);
-    // Disable s.port if internal module is active
+    // Disable S.PORT if internal module is active
     if (IS_TELEMETRY_INTERNAL_MODULE() || !g_model.moduleData[port].pxx.sport_out) {
       extra_flags |= (1 << 5);
     }
