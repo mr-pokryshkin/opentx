@@ -921,21 +921,23 @@ bool menuModelSetup(event_t event)
             if (attr && l_posHorz>0) {
               if (s_editMode>0) {
                 if (l_posHorz == 1) {
-                  if (IS_MODULE_PXX(moduleIdx)/* && g_model.moduleData[moduleIdx].rfProtocol== RF_PROTO_X16 && s_current_protocol[INTERNAL_MODULE] == PROTO_PXX*/) {
-                    if (event==EVT_KEY_BREAK(KEY_ENTER)) {
-#if defined(MODULE_D16_EU_ONLY_SUPPORT)
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_25MW_CH1_8_TELEM_OFF);
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_25MW_CH1_8_TELEM_ON);
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_500MW_CH1_8_TELEM_OFF);
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_500MW_CH9_16_TELEM_OFF);
-                      uint8_t default_selection = 2;
-#else
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_1_8_TELEM_ON);
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_1_8_TELEM_OFF);
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_9_16_TELEM_ON);
-                      POPUP_MENU_ADD_ITEM(STR_BINDING_9_16_TELEM_OFF);
-                      uint8_t default_selection = g_model.moduleData[moduleIdx].pxx.receiver_telem_off + (g_model.moduleData[moduleIdx].pxx.receiver_channel_9_16 << 1);
-#endif
+                  if (IS_MODULE_R9M(moduleIdx) || (IS_MODULE_XJT(moduleIdx) && g_model.moduleData[moduleIdx].rfProtocol == RF_PROTO_X16)) {
+                    if (event == EVT_KEY_BREAK(KEY_ENTER)) {
+                      uint8_t default_selection;
+                      if (IS_MODULE_R9M_LBT(moduleIdx)) {
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_25MW_CH1_8_TELEM_OFF);
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_25MW_CH1_8_TELEM_ON);
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_500MW_CH1_8_TELEM_OFF);
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_500MW_CH9_16_TELEM_OFF);
+                        default_selection = 2;
+                      }
+                      else {
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_1_8_TELEM_ON);
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_1_8_TELEM_OFF);
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_9_16_TELEM_ON);
+                        POPUP_MENU_ADD_ITEM(STR_BINDING_9_16_TELEM_OFF);
+                        default_selection = g_model.moduleData[moduleIdx].pxx.receiver_telem_off + (g_model.moduleData[moduleIdx].pxx.receiver_channel_9_16 << 1);
+                      }
                       POPUP_MENU_SELECT_ITEM(default_selection);
                       POPUP_MENU_START(onBindMenu);
                       continue;
