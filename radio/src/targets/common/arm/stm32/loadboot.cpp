@@ -29,6 +29,12 @@
         __ASM volatile ("nop");                                         \
     }
 
+#define turnPwrOn() {                                             \
+        PWR_GPIO->BSRRL = PWR_ON_GPIO_PIN;                        \
+        PWR_GPIO->MODER = (PWR_GPIO->MODER & ~PWR_ON_GPIO_MODER)  \
+            | PWR_ON_GPIO_MODER;                                  \
+    }
+
 // TODO needed?
 __attribute__ ((section(".bootrodata"), used))
 void _bootStart(void);
@@ -58,22 +64,15 @@ void _bootStart()
   // power on/off loop after being powered off by the user. (issue #2790)
   if (WAS_RESET_BY_WATCHDOG_OR_SOFTWARE()) {
 
-    // rco: is there way to replace that through some HAL code???
-    PWR_GPIO->BSRRL = PWR_ON_GPIO_PIN;               // set PWR_ON_GPIO_PIN pin to 1
-    PWR_GPIO->MODER = (PWR_GPIO->MODER & 0xFFFFFFFC) | 1;  // General purpose output mode
+      turnPwrOn();
   }
 
-  // rco: is there way to replace that through some HAL code???
-  //
-  // TRIMS_GPIO_PIN_LHR is on PG0 on X9E and on PE3 on Taranis
-  // TRIMS_GPIO_PIN_RHL is on PC1 on all versions
-  // turn on pull-ups on trim keys 
-  GPIOC->PUPDR = 0x00000004;
-#if defined(PCBX9E)
-  GPIOG->PUPDR = 0x00000001;
-#else
-  GPIOE->PUPDR = 0x00000040;
-#endif
+  // turn on pull-ups on trim keys
+  TRIMS_GPIO_LHR_PUPDR = 0;
+  TRIMS_GPIO_RHL_PUPDR = 0;
+
+  TRIMS_GPIO_LHR_PUPDR |= TRIMS_GPIO_PIN_LHR;
+  TRIMS_GPIO_RHL_PUPDR |= TRIMS_GPIO_PIN_RHL;
 
   // wait for inputs to stabilize
   for (uint32_t i = 0; i < 50000; i += 1) {
