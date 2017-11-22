@@ -27,10 +27,6 @@
 #endif
 
 #if defined(STM32)
-void bwdt_reset()
-{
-  IWDG->KR = 0xAAAA; // reload
-}
 
 // TODO needed?
 __attribute__ ((section(".bootrodata"), used))
@@ -88,7 +84,7 @@ void _bootStart()
 
   // wait for inputs to stabilize
   for (uint32_t i = 0; i < 50000; i += 1) {
-    bwdt_reset();
+    wdt_reset();
   }
 
   // now the second part of power on sequence
@@ -99,7 +95,7 @@ void _bootStart()
   if (!WAS_RESET_BY_WATCHDOG_OR_SOFTWARE()) {
     // wait here until the power key is pressed
     while (GPIOD->IDR & PWR_SWITCH_GPIO_PIN) {
-      bwdt_reset();
+      wdt_reset();
     }
   }
 
@@ -109,7 +105,7 @@ void _bootStart()
     uint8_t *dest;
     uint32_t size;
 
-    bwdt_reset();
+    wdt_reset();
     size = sizeof(BootCode);
     src = BootCode;
     dest = (uint8_t *) 0x20000000;
@@ -119,7 +115,7 @@ void _bootStart()
     }
     // Could check for a valid copy to RAM here
     // Go execute bootloader
-    bwdt_reset();
+    wdt_reset();
 
     uint32_t address = *(uint32_t *) 0x20000004;
 
