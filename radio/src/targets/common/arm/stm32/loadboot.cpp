@@ -35,7 +35,7 @@
 #define turnPwrOn() {                                             \
         PWR_GPIO->BSRRL = PWR_ON_GPIO_PIN;                        \
         PWR_GPIO->MODER = (PWR_GPIO->MODER & ~PWR_ON_GPIO_MODER)  \
-            | PWR_ON_GPIO_MODER;                                  \
+            | PWR_ON_GPIO_MODER_OUT;                              \
     }
 
 typedef void (*voidFunction)(void);
