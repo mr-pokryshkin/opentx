@@ -22,7 +22,7 @@
 #include "../../../taranis/board.h"
 
 // start address of application in flash
-#define APP_START_ADDRESS (uint32_t)0x08008000
+#define APP_START_ADDRESS (uint32_t)(FIRMWARE_ADDRESS + BOOTLOADER_SIZE)
 
 #define enableKeysPeriphClock() {                                       \
         RCC->AHB1ENR |= KEYS_RCC_AHB1Periph;                            \
