@@ -21,6 +21,11 @@
 #include "opentx.h"
 #include "../../../taranis/board.h"
 
+// start address of application in flash
+#define APP_START_ADDRESS (uint32_t)0x08008000
+
+typedef void (*voidFunction)(void);
+
 #define enableKeysPeriphClock() {                                       \
         RCC->AHB1ENR |= KEYS_RCC_AHB1Periph;                            \
         /* these two NOPs are needed (see STM32F errata sheet) before the peripheral */ \
@@ -35,21 +40,16 @@
             | PWR_ON_GPIO_MODER;                                  \
     }
 
-// TODO needed?
-__attribute__ ((section(".bootrodata"), used))
-void _bootStart(void);
-
-__attribute__ ((section(".isr_boot_vector"), used))
-const uint32_t BootVectors[] = {
-  (uint32_t) &_estack,
-  (uint32_t) (void (*)(void)) ((unsigned long) &_bootStart) };
+#define jumpTo(addr) {                                          \
+        uint32_t     jumpAddress = *(uint32_t*)(addr);          \
+        voidFunction jumpFn = (voidFunction)jumpAddress;        \
+        jumpFn();                                               \
+    }
 
 __attribute__ ((section(".bootrodata.*"), used))
-
 const uint8_t BootCode[] = {
 #include "bootloader.lbm"
 };
-
 
 __attribute__ ((section(".bootrodata"), used))
 void _bootStart()
@@ -110,30 +110,19 @@ void _bootStart()
     // Could check for a valid copy to RAM here
     // Go execute bootloader
     wdt_reset();
-
-    uint32_t address = *(uint32_t *) (SRAM_BASE + 4);
-    ((void (*)(void)) (address))();
+    jumpTo(SRAM_BASE + 4);
   }
 
   // Start the main application
-  asm(" mov.w	r1, #0x8000000");
-  asm(" add.w	r1, #0x8000");
+  SCB->VTOR = APP_START_ADDRESS;                  // set the VTOR
+  __set_MSP(*(__IO uint32_t*)APP_START_ADDRESS);  // set stack pointer value
 
-  asm(" movw	r0, #0xED08");
-  asm(" movt	r0, #0xE000");
-  asm(" str	r1, [r0, #0]");
-  // Set the VTOR
-
-  asm("ldr	r0, [r1, #0]");
-  // Stack pointer value
-  asm("msr msp, r0");
-  // Set it
-  asm("ldr	r0, [r1, #4]");
-  // Reset address
-  asm("mov.w	r1, #1");
-  asm("orr		r0, r1");
-  // Set lsbit
-  asm("bx r0");
-  // Execute application
+  // Jump to proper application address
+  jumpTo(APP_START_ADDRESS + 4);
 }
 
+__attribute__ ((section(".isr_boot_vector"), used))
+const uint32_t BootVectors[] = {
+  (uint32_t) &_estack,
+  (uint32_t) (void (*)(void)) ((unsigned long) &_bootStart)
+};
