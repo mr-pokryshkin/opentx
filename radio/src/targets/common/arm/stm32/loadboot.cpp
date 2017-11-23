@@ -24,8 +24,6 @@
 // start address of application in flash
 #define APP_START_ADDRESS (uint32_t)0x08008000
 
-typedef void (*voidFunction)(void);
-
 #define enableKeysPeriphClock() {                                       \
         RCC->AHB1ENR |= KEYS_RCC_AHB1Periph;                            \
         /* these two NOPs are needed (see STM32F errata sheet) before the peripheral */ \
@@ -39,6 +37,8 @@ typedef void (*voidFunction)(void);
         PWR_GPIO->MODER = (PWR_GPIO->MODER & ~PWR_ON_GPIO_MODER)  \
             | PWR_ON_GPIO_MODER;                                  \
     }
+
+typedef void (*voidFunction)(void);
 
 #define jumpTo(addr) {                                          \
         uint32_t     jumpAddress = *(uint32_t*)(addr);          \
@@ -76,7 +76,7 @@ void _bootStart()
 
   // wait for inputs to stabilize
   for (uint32_t i = 0; i < 50000; i += 1) {
-    wdt_reset();
+      wdt_reset();
   }
 
   // now the second part of power on sequence
@@ -85,32 +85,32 @@ void _bootStart()
   // and to terminate it, just wait here without turning on PWR pin. The power supply will
   // eventually exhaust and the radio will turn off.
   if (!WAS_RESET_BY_WATCHDOG_OR_SOFTWARE()) {
-    // wait here until the power key is pressed
-    while (PWR_SWITCH_GPIO_REG & PWR_SWITCH_GPIO_PIN) {
-      wdt_reset();
-    }
+      // wait here until the power key is pressed
+      while (PWR_SWITCH_GPIO_REG & PWR_SWITCH_GPIO_PIN) {
+          wdt_reset();
+      }
   }
 
   if (!(TRIMS_GPIO_REG_LHR & TRIMS_GPIO_PIN_LHR)
       && !(TRIMS_GPIO_REG_RHL & TRIMS_GPIO_PIN_RHL)) {
 
-    // Bootloader needed
-    const uint8_t *src;
-    uint8_t *dest;
-    uint32_t size;
+      // Bootloader needed
+      const uint8_t *src;
+      uint8_t *dest;
+      uint32_t size;
 
-    wdt_reset();
-    size = sizeof(BootCode);
-    src = BootCode;
-    dest = (uint8_t *) SRAM_BASE;
+      wdt_reset();
+      size = sizeof(BootCode);
+      src = BootCode;
+      dest = (uint8_t *) SRAM_BASE;
 
-    for (; size; size -= 1) {
-      *dest++ = *src++;
-    }
-    // Could check for a valid copy to RAM here
-    // Go execute bootloader
-    wdt_reset();
-    jumpTo(SRAM_BASE + 4);
+      for (; size; size -= 1) {
+          *dest++ = *src++;
+      }
+      wdt_reset();
+
+      // execute bootloader
+      jumpTo(SRAM_BASE + 4);
   }
 
   // Start the main application
@@ -124,5 +124,5 @@ void _bootStart()
 __attribute__ ((section(".isr_boot_vector"), used))
 const uint32_t BootVectors[] = {
   (uint32_t) &_estack,
-  (uint32_t) (void (*)(void)) ((unsigned long) &_bootStart)
+  (uint32_t) (voidFunction)&_bootStart
 };
