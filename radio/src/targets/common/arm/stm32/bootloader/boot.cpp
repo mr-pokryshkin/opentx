@@ -21,25 +21,7 @@
 #include "opentx.h"
 #include "stamp.h"
 
-#if defined(PCBX7)
-  #define BOOTLOADER_TITLE               " X7 Bootloader - " VERSION
-#elif defined(PCBTARANIS)
-  #define BOOTLOADER_TITLE               " Taranis Bootloader - " VERSION
-#else
-  #error "Not implemented"
-#endif
-
-#if defined(PCBX9E) || defined(PCBX7)
-  #define BOOT_KEY_UP                  KEY_MINUS
-  #define BOOT_KEY_DOWN                KEY_PLUS
-#else
-  #define BOOT_KEY_UP                  KEY_PLUS
-  #define BOOT_KEY_DOWN                KEY_MINUS
-#endif
-#define BOOT_KEY_LEFT                  KEY_MENU
-#define BOOT_KEY_RIGHT                 KEY_PAGE
-#define BOOT_KEY_MENU                  KEY_ENTER
-#define BOOT_KEY_EXIT                  KEY_EXIT
+#define BOOTLOADER_TITLE               " OTX Bootloader - " VERSION
 #define DISPLAY_CHAR_WIDTH             35
 
 #if LCD_W >= 212
@@ -113,7 +95,6 @@ uint8_t Block_buffer[BLOCK_LEN];
 UINT BlockCount;
 
 uint32_t memoryType;
-
 uint32_t unlocked = 0;
 
 void interrupt10ms(void)
@@ -128,7 +109,7 @@ void interrupt10ms(void)
     ++index;
   }
 
-#if defined(PCBX9E) || defined(PCBX7)
+#if defined(ROTARY_ENCODER_NAVIGATION)
   checkRotaryEncoder();
   static rotenc_t rePreviousValue;
   rotenc_t reNewValue = (rotencValue[0] / 2);
@@ -136,10 +117,10 @@ void interrupt10ms(void)
   if (scrollRE) {
     rePreviousValue = reNewValue;
     if (scrollRE < 0) {
-      putEvent(EVT_KEY_FIRST(KEY_MINUS));
+        putEvent(EVT_KEY_FIRST(KEY_UP)); //EVT_ROTARY_LEFT
     }
     else {
-      putEvent(EVT_KEY_FIRST(KEY_PLUS));
+        putEvent(EVT_KEY_FIRST(KEY_DOWN)); //EVT_ROTARY_RIGHT
     }
   }
 #endif
@@ -166,32 +147,30 @@ extern "C" void INTERRUPT_5MS_IRQHandler()
 FRESULT readBinDir(DIR *dj, FILINFO *fno)
 {
   FRESULT fr;
-  uint32_t loop;
   do {
-    loop = 0;
     fr = f_readdir(dj, fno);    // First entry
 
-    if (fr != FR_OK || fno->fname[0] == 0) {
+    if (fr != FR_OK || fno->fname[0] == 0)
       break;
-    }
-    int32_t len = strlen(fno->fname) - 4;
-    if (len < 0) {
-      loop = 1;
-    }
-    if (fno->fname[len] != '.') {
-      loop = 1;
-    }
-    if ((fno->fname[len + 1] != 'b') && (fno->fname[len + 1] != 'B')) {
-      loop = 1;
-    }
-    if ((fno->fname[len + 2] != 'i') && (fno->fname[len + 2] != 'I')) {
-      loop = 1;
-    }
-    if ((fno->fname[len + 3] != 'n') && (fno->fname[len + 3] != 'N')) {
-      loop = 1;
-    }
 
-  } while (loop);
+    int32_t len = strlen(fno->fname) - 4;
+    if (len < 0)
+        continue;
+
+    if (fno->fname[len] != '.')
+        continue;
+    
+    if ((fno->fname[len + 1] != 'b') && (fno->fname[len + 1] != 'B'))
+        continue;
+
+    if ((fno->fname[len + 2] != 'i') && (fno->fname[len + 2] != 'I'))
+        continue;
+
+    if ((fno->fname[len + 3] != 'n') && (fno->fname[len + 3] != 'N'))
+        continue;
+
+  } while (1);
+
   return fr;
 }
 
@@ -286,17 +265,17 @@ int menuFlashFile(uint32_t index, event_t event)
       lcdDrawTextAlignedLeft(4*FH, STR_INVALID_FIRMWARE);
     else
       lcdDrawTextAlignedLeft(4*FH, STR_INVALID_EEPROM);
-    if (event == EVT_KEY_BREAK(BOOT_KEY_EXIT) || event == EVT_KEY_BREAK(BOOT_KEY_MENU)) {
+    if (event == EVT_KEY_BREAK(KEY_EXIT) || event == EVT_KEY_BREAK(KEY_ENTER)) {
       return 0;
     }
     return -1;
   }
 
-  if (event == EVT_KEY_LONG(BOOT_KEY_MENU)) {
+  if (event == EVT_KEY_LONG(KEY_ENTER)) {
     fr = openBinaryFile(index);
     return (fr == FR_OK && isValidBufferStart(Block_buffer));
   }
-  else if (event == EVT_KEY_FIRST(BOOT_KEY_EXIT)) {
+  else if (event == EVT_KEY_FIRST(KEY_EXIT)) {
     return 0;
   }
 
@@ -339,12 +318,10 @@ int main()
   uint32_t vpos = 0;
   uint32_t hpos = 0;
 
-#if defined(PCBTARANIS)
   wdt_reset();
   RCC_AHB1PeriphClockCmd(PWR_RCC_AHB1Periph | KEYS_RCC_AHB1Periph | LCD_RCC_AHB1Periph | BACKLIGHT_RCC_AHB1Periph | I2C_RCC_AHB1Periph | SD_RCC_AHB1Periph, ENABLE);
   RCC_APB1PeriphClockCmd(LCD_RCC_APB1Periph | BACKLIGHT_RCC_APB1Periph | INTERRUPT_5MS_APB1Periph | I2C_RCC_APB1Periph | SD_RCC_APB1Periph, ENABLE);
   RCC_APB2PeriphClockCmd(BACKLIGHT_RCC_APB2Periph, ENABLE);
-#endif
 
   pwrInit();
   delaysInit(); // needed for lcdInit()
@@ -363,11 +340,9 @@ int main()
   __enable_irq();
   init10msTimer();
 
-#if defined(PCBTARANIS)
   // SD card detect pin
   sdInit();
   usbInit();
-#endif
 
   for (;;) {
     wdt_reset();
@@ -400,13 +375,13 @@ int main()
         lcdDrawTextAlignedLeft(4*FH, "\010Exit");
         lcdInvertLine(2+vpos);
         lcdDrawTextAlignedLeft(7*FH, STR_OR_PLUGIN_USB_CABLE);
-        if (event == EVT_KEY_FIRST(BOOT_KEY_DOWN)) {
+        if (event == EVT_KEY_FIRST(KEY_DOWN)) {
           vpos == 2 ? vpos = 0 : vpos = vpos+1;
         }
-        else if (event == EVT_KEY_FIRST(BOOT_KEY_UP)) {
+        else if (event == EVT_KEY_FIRST(KEY_UP)) {
           vpos == 0 ? vpos = 2 : vpos = vpos-1;
         }
-        else if (event == EVT_KEY_BREAK(BOOT_KEY_MENU)) {
+        else if (event == EVT_KEY_BREAK(KEY_ENTER)) {
           switch (vpos) {
             case 0:
               state = ST_FLASH_MENU;
@@ -446,7 +421,7 @@ int main()
         }
         else {
           lcdDrawTextAlignedLeft(2*FH, INDENT "Directory is missing!");
-          if (event == EVT_KEY_BREAK(BOOT_KEY_EXIT) || event == EVT_KEY_BREAK(BOOT_KEY_MENU)) {
+          if (event == EVT_KEY_BREAK(KEY_EXIT) || event == EVT_KEY_BREAK(KEY_ENTER)) {
             vpos = 0;
             state = ST_START;
           }
@@ -490,7 +465,7 @@ int main()
           lcdDrawSizedText(INDENT_WIDTH, 16 + FH * i, &Filenames[i][x], DISPLAY_CHAR_WIDTH, 0);
         }
 
-        if (event == EVT_KEY_REPT(BOOT_KEY_DOWN) || event == EVT_KEY_FIRST(BOOT_KEY_DOWN)) {
+        if (event == EVT_KEY_REPT(KEY_DOWN) || event == EVT_KEY_FIRST(KEY_DOWN)) {
           if (vpos < limit - 1) {
             vpos += 1;
           }
@@ -501,7 +476,7 @@ int main()
             }
           }
         }
-        else if (event == EVT_KEY_REPT(BOOT_KEY_UP) || event == EVT_KEY_FIRST(BOOT_KEY_UP)) {
+        else if (event == EVT_KEY_REPT(KEY_UP) || event == EVT_KEY_FIRST(KEY_UP)) {
           if (vpos > 0) {
             vpos -= 1;
           }
@@ -512,31 +487,18 @@ int main()
             }
           }
         }
-#if !defined(PCBTARANIS)
-        else if (event == EVT_KEY_REPT(BOOT_KEY_RIGHT) || event == EVT_KEY_FIRST(BOOT_KEY_RIGHT)) {
-          if (hpos + DISPLAY_CHAR_WIDTH < maxhsize) {
-            hpos += 1;
-          }
-        }
-        else if (event == EVT_KEY_REPT(BOOT_KEY_LEFT) || event == EVT_KEY_FIRST(BOOT_KEY_LEFT)) {
-          if (hpos) {
-            hpos -= 1;
-          }
-        }
-#endif
-        else if (event == EVT_KEY_BREAK(BOOT_KEY_MENU)) {
+        else if (event == EVT_KEY_BREAK(KEY_ENTER)) {
           // Select file to flash
           state = ST_FLASH_CHECK;
           Valid = 0;
         }
-        else if (event == EVT_KEY_FIRST(BOOT_KEY_EXIT)) {
+        else if (event == EVT_KEY_FIRST(KEY_EXIT)) {
           state = ST_START;
           vpos = 0;
         }
 
         lcdInvertLine(2 + vpos);
       }
-
       else if (state == ST_FLASH_CHECK) {
         int result = menuFlashFile(vpos, event);
         FirmwareSize = FileSize[vpos] - BOOTLOADER_SIZE;
@@ -598,13 +560,13 @@ int main()
           unlocked = 0;
         }
         lcdDrawTextAlignedLeft(4*FH, CENTER "\007Writing complete");
-        if (event == EVT_KEY_FIRST(BOOT_KEY_EXIT) || event == EVT_KEY_BREAK(BOOT_KEY_MENU)) {
+        if (event == EVT_KEY_FIRST(KEY_EXIT) || event == EVT_KEY_BREAK(KEY_ENTER)) {
           state = ST_START;
           vpos = 0;
         }
       }
 
-      if (event == EVT_KEY_LONG(BOOT_KEY_EXIT)) {
+      if (event == EVT_KEY_LONG(KEY_EXIT)) {
         state = ST_REBOOT;
       }
 
