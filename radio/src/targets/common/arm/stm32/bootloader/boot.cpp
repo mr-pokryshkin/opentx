@@ -22,7 +22,7 @@
 #include "stamp.h"
 
 #define BOOTLOADER_TITLE               " OTX Bootloader - " VERSION
-#define DISPLAY_CHAR_WIDTH             35
+#define DISPLAY_CHAR_WIDTH             (LCD_COLS+4)
 
 #if LCD_W >= 212
   #define STR_OR_PLUGIN_USB_CABLE      INDENT "Or plug in a USB cable for mass storage"
@@ -101,7 +101,7 @@ void interrupt10ms(void)
 {
   Tenms |= 1;     // 10 mS has passed
 
-  uint8_t index = KEY_MENU;
+  uint8_t index = 0;
   uint8_t in = readKeys();
   for (uint8_t i = 1; i != uint8_t(1 << TRM_BASE); i <<= 1) {
     uint8_t value = (in & i);
@@ -128,19 +128,19 @@ void interrupt10ms(void)
 
 void init10msTimer()
 {
-  INTERRUPT_5MS_TIMER->ARR = 9999;  // 10mS
-  INTERRUPT_5MS_TIMER->PSC = (PERI1_FREQUENCY * TIMER_MULT_APB1) / 1000000 - 1; // 1uS from 12MHz
-  INTERRUPT_5MS_TIMER->CCER = 0;
-  INTERRUPT_5MS_TIMER->CCMR1 = 0;
-  INTERRUPT_5MS_TIMER->EGR = 0;
-  INTERRUPT_5MS_TIMER->CR1 = 5;
-  INTERRUPT_5MS_TIMER->DIER |= 1;
-  NVIC_EnableIRQ(INTERRUPT_5MS_IRQn);
+  INTERRUPT_xMS_TIMER->ARR = 9999;  // 10mS in uS
+  INTERRUPT_xMS_TIMER->PSC = (PERI1_FREQUENCY * TIMER_MULT_APB1) / 1000000 - 1; // 1uS
+  INTERRUPT_xMS_TIMER->CCER = 0;
+  INTERRUPT_xMS_TIMER->CCMR1 = 0;
+  INTERRUPT_xMS_TIMER->EGR = 0;
+  INTERRUPT_xMS_TIMER->CR1 = 5;
+  INTERRUPT_xMS_TIMER->DIER |= 1;
+  NVIC_EnableIRQ(INTERRUPT_xMS_IRQn);
 }
 
-extern "C" void INTERRUPT_5MS_IRQHandler()
+extern "C" void INTERRUPT_xMS_IRQHandler()
 {
-  INTERRUPT_5MS_TIMER->SR &= ~TIM_SR_UIF;
+  INTERRUPT_xMS_TIMER->SR &= ~TIM_SR_UIF;
   interrupt10ms();
 }
 
@@ -233,17 +233,21 @@ FRESULT openBinaryFile(uint32_t index)
 
 uint32_t isValidBufferStart(const uint8_t * buffer)
 {
+#if defined(PCBTARANIS)
   if (memoryType == MEM_FLASH)
     return isFirmwareStart(buffer);
   else
     return isEepromStart(buffer);
+#else
+  return isFirmwareStart(buffer);
+#endif
 }
 
 int menuFlashFile(uint32_t index, event_t event)
 {
   FRESULT fr;
 
-  lcdDrawTextAlignedLeft(4*FH, STR_HOLD_ENTER_TO_START);
+  lcdDrawText(0, 4*FH, STR_HOLD_ENTER_TO_START);
 
   if (Valid == 0) {
     // Validate file here
@@ -265,9 +269,9 @@ int menuFlashFile(uint32_t index, event_t event)
 
   if (Valid == 2) {
     if (memoryType == MEM_FLASH)
-      lcdDrawTextAlignedLeft(4*FH, STR_INVALID_FIRMWARE);
+        lcdDrawText(0, 4*FH, STR_INVALID_FIRMWARE);
     else
-      lcdDrawTextAlignedLeft(4*FH, STR_INVALID_EEPROM);
+        lcdDrawText(0, 4*FH, STR_INVALID_EEPROM);
     if (event == EVT_KEY_BREAK(KEY_EXIT) || event == EVT_KEY_BREAK(KEY_ENTER)) {
       return 0;
     }
@@ -305,26 +309,35 @@ void flashWriteBlock()
   }
 }
 
+#if defined(PCBTARANIS)
 void writeEepromBlock()
 {
   eepromWriteBlock(Block_buffer, eepromAddress, BlockCount);
   eepromAddress += BlockCount;
 }
+#endif
 
 int main()
 {
-  uint8_t index = 0;
-  uint8_t maxhsize = DISPLAY_CHAR_WIDTH;
-  FRESULT fr;
   uint32_t state = ST_START;
-  uint32_t nameCount = 0;
   uint32_t vpos = 0;
-  uint32_t hpos = 0;
+
+#if defined(PCBTARANIS)
+  uint8_t index = 0;
+  FRESULT fr;
+  uint32_t nameCount = 0;
+#endif
 
   wdt_reset();
-  RCC_AHB1PeriphClockCmd(PWR_RCC_AHB1Periph | KEYS_RCC_AHB1Periph | LCD_RCC_AHB1Periph | BACKLIGHT_RCC_AHB1Periph | I2C_RCC_AHB1Periph | SD_RCC_AHB1Periph, ENABLE);
-  RCC_APB1PeriphClockCmd(LCD_RCC_APB1Periph | BACKLIGHT_RCC_APB1Periph | INTERRUPT_5MS_APB1Periph | I2C_RCC_APB1Periph | SD_RCC_APB1Periph, ENABLE);
-  RCC_APB2PeriphClockCmd(BACKLIGHT_RCC_APB2Periph, ENABLE);
+  RCC_AHB1PeriphClockCmd(PWR_RCC_AHB1Periph | KEYS_RCC_AHB1Periph |
+                         LCD_RCC_AHB1Periph | BACKLIGHT_RCC_AHB1Periph |
+                         I2C_RCC_AHB1Periph | SD_RCC_AHB1Periph, ENABLE);
+
+  RCC_APB1PeriphClockCmd(LCD_RCC_APB1Periph | BACKLIGHT_RCC_APB1Periph |
+                         INTERRUPT_xMS_RCC_APB1Periph | I2C_RCC_APB1Periph |
+                         SD_RCC_APB1Periph, ENABLE);
+
+  RCC_APB2PeriphClockCmd(LCD_RCC_APB2Periph | BACKLIGHT_RCC_APB2Periph, ENABLE);
 
   pwrInit();
   delaysInit(); // needed for lcdInit()
@@ -332,13 +345,13 @@ int main()
   backlightInit();
 
   lcdClear();
-  lcdDrawSizedText(0, 0, (const char *)bootloaderVersion, 0); // trick to avoid bootloaderVersion to be optimized out ...
-  lcdDrawTextAlignedLeft(0, BOOTLOADER_TITLE);
-  lcdInvertLine(0);
+  lcdDrawText(0, 0, BOOTLOADER_TITLE, INVERS);
   lcdRefresh();
 
   keysInit();
+#if defined(PCBTARANIS)
   i2cInit();
+#endif
 
   __enable_irq();
   init10msTimer();
@@ -355,8 +368,7 @@ int main()
 
       lcdRefreshWait();
       lcdClear();
-      lcdDrawTextAlignedLeft(0, BOOTLOADER_TITLE);
-      lcdInvertLine(0);
+      lcdDrawText(0, 0, BOOTLOADER_TITLE, INVERS);
 
       event_t event = getEvent();
 
@@ -373,44 +385,47 @@ int main()
       }
 
       if (state == ST_START) {
-        lcdDrawTextAlignedLeft(2*FH, "\010Write Firmware");
-        lcdDrawTextAlignedLeft(3*FH, "\010Restore EEPROM");
-        lcdDrawTextAlignedLeft(4*FH, "\010Exit");
-        lcdInvertLine(2+vpos);
-        lcdDrawTextAlignedLeft(7*FH, STR_OR_PLUGIN_USB_CABLE);
-        if (event == EVT_KEY_FIRST(KEY_DOWN)) {
-          vpos == 2 ? vpos = 0 : vpos = vpos+1;
-        }
-        else if (event == EVT_KEY_FIRST(KEY_UP)) {
-          vpos == 0 ? vpos = 2 : vpos = vpos-1;
-        }
-        else if (event == EVT_KEY_BREAK(KEY_ENTER)) {
-          switch (vpos) {
-            case 0:
-              state = ST_FLASH_MENU;
-              break;
-            case 1:
-              state = ST_RESTORE_MENU;
-              break;
-            default:
-              state = ST_REBOOT;
+#if defined(PCBTARANIS)
+          lcdDrawText(0, 2*FH, "\010Write Firmware");
+          lcdDrawText(0, 3*FH, "\010Restore EEPROM");
+          lcdDrawText(0, 4*FH, "\010Exit");
+          lcdInvertLine(2+vpos);
+          lcdDrawText(0, 7*FH, STR_OR_PLUGIN_USB_CABLE);
+          if (event == EVT_KEY_FIRST(KEY_DOWN)) {
+              vpos == 2 ? vpos = 0 : vpos = vpos+1;
           }
-        }
+          else if (event == EVT_KEY_FIRST(KEY_UP)) {
+              vpos == 0 ? vpos = 2 : vpos = vpos-1;
+          }
+          else if (event == EVT_KEY_BREAK(KEY_ENTER)) {
+              switch (vpos) {
+              case 0:
+                  state = ST_FLASH_MENU;
+                  break;
+              case 1:
+                  state = ST_RESTORE_MENU;
+                  break;
+              default:
+                  state = ST_REBOOT;
+              }
+          }
+#endif
       }
 
       if (state == ST_USB) {
-        lcdDrawTextAlignedLeft(4*FH, STR_USB_CONNECTED);
-        if (usbPlugged() == 0) {
-          vpos = 0;
-          usbStop();
-          if (unlocked) {
-            lockFlash();
-            unlocked = 0;
+          lcdDrawText(0, 4*FH, STR_USB_CONNECTED);
+          if (usbPlugged() == 0) {
+              vpos = 0;
+              usbStop();
+              if (unlocked) {
+                  lockFlash();
+                  unlocked = 0;
+              }
+              state = ST_START;
           }
-          state = ST_START;
-        }
       }
 
+#if defined(PCBTARANIS)
       if (state == ST_FLASH_MENU || state == ST_RESTORE_MENU) {
         sdInit();
         memoryType = (state == ST_RESTORE_MENU ? MEM_EEPROM : MEM_FLASH);
@@ -423,11 +438,11 @@ int main()
           state = ST_OPEN_DIR;
         }
         else {
-          lcdDrawTextAlignedLeft(2*FH, INDENT "Directory is missing!");
-          if (event == EVT_KEY_BREAK(KEY_EXIT) || event == EVT_KEY_BREAK(KEY_ENTER)) {
-            vpos = 0;
-            state = ST_START;
-          }
+            lcdDrawText(0, 2*FH, INDENT "Directory is missing!");
+            if (event == EVT_KEY_BREAK(KEY_EXIT) || event == EVT_KEY_BREAK(KEY_ENTER)) {
+                vpos = 0;
+                state = ST_START;
+            }
         }
       }
 
@@ -437,7 +452,6 @@ int main()
         if (fr == FR_OK) {
           state = ST_FILE_LIST;
           nameCount = fillNames(0);
-          hpos = 0;
           vpos = 0;
         }
       }
@@ -447,25 +461,9 @@ int main()
         if (nameCount < limit) {
           limit = nameCount;
         }
-        maxhsize = 0;
+
         for (uint32_t i=0; i<limit; i++) {
-          uint32_t x;
-          x = strlen(Filenames[i]);
-          if (x > maxhsize) {
-            maxhsize = x;
-          }
-          if (x > DISPLAY_CHAR_WIDTH) {
-            if (hpos + DISPLAY_CHAR_WIDTH > x) {
-              x = x - DISPLAY_CHAR_WIDTH;
-            }
-            else {
-              x = hpos;
-            }
-          }
-          else {
-            x = 0;
-          }
-          lcdDrawSizedText(INDENT_WIDTH, 16 + FH * i, &Filenames[i][x], DISPLAY_CHAR_WIDTH, 0);
+            lcdDrawSizedText(INDENT_WIDTH, 16 + FH * i, Filenames[i], DISPLAY_CHAR_WIDTH, 0);
         }
 
         if (event == EVT_KEY_REPT(KEY_DOWN) || event == EVT_KEY_FIRST(KEY_DOWN)) {
@@ -568,7 +566,7 @@ int main()
           vpos = 0;
         }
       }
-
+#endif
       if (event == EVT_KEY_LONG(KEY_EXIT)) {
         state = ST_REBOOT;
       }

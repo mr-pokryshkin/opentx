@@ -708,6 +708,8 @@
   #define LCD_RST_GPIO                  GPIOD
   #define LCD_RST_GPIO_PIN              GPIO_Pin_12 // PD.12
 #endif
+#define LCD_RCC_APB2Periph              0
+
 
 // I2C Bus: EEPROM and CAT5137 digital pot for volume control
 #define I2C_RCC_AHB1Periph              RCC_AHB1Periph_GPIOB
@@ -839,14 +841,14 @@
   #define BT_RCC_APB2Periph            0
 #endif
 
-// 5ms Interrupt
-#define INTERRUPT_5MS_APB1Periph        RCC_APB1Periph_TIM14
-#define INTERRUPT_5MS_TIMER             TIM14
-#define INTERRUPT_5MS_IRQn              TIM8_TRG_COM_TIM14_IRQn
-#define INTERRUPT_5MS_IRQHandler        TIM8_TRG_COM_TIM14_IRQHandler
+// Xms Interrupt
+#define INTERRUPT_xMS_RCC_APB1Periph    RCC_APB1Periph_TIM14
+#define INTERRUPT_xMS_TIMER             TIM14
+#define INTERRUPT_xMS_IRQn              TIM8_TRG_COM_TIM14_IRQn
+#define INTERRUPT_xMS_IRQHandler        TIM8_TRG_COM_TIM14_IRQHandler
 
 // 2MHz Timer
-#define TIMER_2MHz_APB1Periph           RCC_APB1Periph_TIM7
+#define TIMER_2MHz_RCC_APB1Periph       RCC_APB1Periph_TIM7
 #define TIMER_2MHz_TIMER                TIM7
 
 #endif // _HAL_H_
