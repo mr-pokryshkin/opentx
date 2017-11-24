@@ -104,6 +104,7 @@
 #if defined(PCBX12S)
   #define TRIMS_GPIO_REG_RHL            GPIOC->IDR
   #define TRIMS_GPIO_PIN_RHL            GPIO_Pin_0  // PC.00
+  #define TRIMS_GPIO_RHL_PUPDR          GPIOC->PUPDR
   #define TRIMS_GPIO_REG_RHR            GPIOI->IDR
   #define TRIMS_GPIO_PIN_RHR            GPIO_Pin_4  // PI.04
   #define TRIMS_GPIO_REG_RVD            GPIOG->IDR
@@ -118,6 +119,7 @@
   #define TRIMS_GPIO_PIN_LVU            GPIO_Pin_12 // PJ.12
   #define TRIMS_GPIO_REG_LHR            GPIOD->IDR
   #define TRIMS_GPIO_PIN_LHR            GPIO_Pin_7  // PD.07
+  #define TRIMS_GPIO_LHR_PUPDR          GPIOD->PUPDR
   #define TRIMS_GPIO_REG_RSD            GPIOJ->IDR
   #define TRIMS_GPIO_PIN_RSD            GPIO_Pin_8  // PJ.08
   #define TRIMS_GPIO_REG_RSU            GPIOD->IDR
@@ -131,6 +133,7 @@
   #define TRIMS_GPIO_PIN_LHL            GPIO_Pin_8  // PB.08
   #define TRIMS_GPIO_REG_LHR            GPIOB->IDR
   #define TRIMS_GPIO_PIN_LHR            GPIO_Pin_9  // PB.09
+  #define TRIMS_GPIO_LHR_PUPDR          GPIOB->PUPDR
   #define TRIMS_GPIO_REG_LVD            GPIOG->IDR
   #define TRIMS_GPIO_PIN_LVD            GPIO_Pin_12 // PG.12
   #define TRIMS_GPIO_REG_LVU            GPIOJ->IDR
@@ -139,6 +142,7 @@
   #define TRIMS_GPIO_PIN_RVD            GPIO_Pin_13 // PJ.13
   #define TRIMS_GPIO_REG_RHL            GPIOD->IDR
   #define TRIMS_GPIO_PIN_RHL            GPIO_Pin_3  // PD.03
+  #define TRIMS_GPIO_RHL_PUPDR          GPIOD->PUPDR
   #define TRIMS_GPIO_REG_RVU            GPIOJ->IDR
   #define TRIMS_GPIO_PIN_RVU            GPIO_Pin_12 // PJ.12
   #define TRIMS_GPIO_REG_RHR            GPIOD->IDR
@@ -246,8 +250,11 @@
 // Power
 #define PWR_RCC_AHB1Periph              RCC_AHB1Periph_GPIOJ
 #define PWR_GPIO                        GPIOJ
-#define PWR_ON_GPIO_PIN                 GPIO_Pin_1  // PJ.01
+#define PWR_SWITCH_GPIO_REG             PWR_GPIO->IDR
 #define PWR_SWITCH_GPIO_PIN             GPIO_Pin_0  // PJ.00
+#define PWR_ON_GPIO_PIN                 GPIO_Pin_1  // PJ.01
+#define PWR_ON_GPIO_MODER               GPIO_MODER_MODER1
+#define PWR_ON_GPIO_MODER_OUT           GPIO_MODER_MODER1_0
 
 #if defined(PCBX10)
   #define SPORT_UPDATE_RCC_AHB1Periph   RCC_AHB1Periph_GPIOH

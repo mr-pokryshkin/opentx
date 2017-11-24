@@ -19,7 +19,12 @@
  */
 
 #include "opentx.h"
-#include "../../../taranis/board.h"
+
+// #if defined(PCBTARANIS)
+// #include "../../../taranis/board.h"
+// #elif defined(PCBHORUS)
+// #include "../../../horus/board.h"
+// #endif
 
 // start address of application in flash
 #define APP_START_ADDRESS (uint32_t)(FIRMWARE_ADDRESS + BOOTLOADER_SIZE)

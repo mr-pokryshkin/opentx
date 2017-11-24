@@ -135,7 +135,7 @@ void boardInit()
                          PCBREV_RCC_AHB1Periph |
                          LED_RCC_AHB1Periph |
                          LCD_RCC_AHB1Periph |
-                         BL_RCC_AHB1Periph |
+                         BACKLIGHT_RCC_AHB1Periph |
                          SD_RCC_AHB1Periph |
                          AUDIO_RCC_AHB1Periph |
                          KEYS_RCC_AHB1Periph |
@@ -149,8 +149,7 @@ void boardInit()
                          INTMODULE_RCC_AHB1Periph |
                          EXTMODULE_RCC_AHB1Periph |
                          GPS_RCC_AHB1Periph |
-                         SPORT_UPDATE_RCC_AHB1Periph |
-                         BL_RCC_AHB1Periph,
+                         SPORT_UPDATE_RCC_AHB1Periph,
                          ENABLE);
 
   RCC_APB1PeriphClockCmd(INTERRUPT_xMS_RCC_APB1Periph |
@@ -164,7 +163,7 @@ void boardInit()
                          INTMODULE_RCC_APB1Periph |
                          EXTMODULE_RCC_APB1Periph |
                          GPS_RCC_APB1Periph |
-                         BL_RCC_APB1Periph,
+                         BACKLIGHT_RCC_APB1Periph,
                          ENABLE);
 
   RCC_APB2PeriphClockCmd(LCD_RCC_APB2Periph |
@@ -173,7 +172,7 @@ void boardInit()
                          INTMODULE_RCC_APB2Periph |
                          EXTMODULE_RCC_APB2Periph |
                          BT_RCC_APB2Periph |
-                         BL_RCC_APB2Periph,
+                         BACKLIGHT_RCC_APB2Periph,
                          ENABLE);
 
   pwrInit();
