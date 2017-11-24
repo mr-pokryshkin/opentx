@@ -169,6 +169,9 @@ FRESULT readBinDir(DIR *dj, FILINFO *fno)
     if ((fno->fname[len + 3] != 'n') && (fno->fname[len + 3] != 'N'))
         continue;
 
+    // match!
+    break;
+
   } while (1);
 
   return fr;
