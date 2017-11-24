@@ -87,9 +87,12 @@ else()
     ../../../../../targets/${TARGET_DIR}/sdio_sd.c
     ../../../../../targets/${TARGET_DIR}/haptic_driver.cpp
     ../../../../../gui/${GUI_DIR}/bitmapbuffer.cpp
+    ../../../../../syscalls.c
     )
+
 endif()
 
+remove_definitions(-DDISK_CACHE)
 remove_definitions(-DLUA -DDEBUG)
 add_definitions(-DBOOT)
 
